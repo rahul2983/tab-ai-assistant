@@ -724,6 +724,63 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     return true; // Keep channel open for async response
   }
+
+  else if (message.action === 'removeTab') {
+    // Handle remove tab request
+    console.log('Removing tab request received for ID:', message.tabId);
+    
+    (async () => {
+      try {
+        // First try to remove from backend
+        let backendRemoved = false;
+        
+        try {
+          // Call the backend API to remove the tab
+          const response = await fetch(`${API_ENDPOINT}/remove/${message.tabId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Tab removed from backend:', result);
+            backendRemoved = true;
+          } else {
+            console.error('Error removing tab from backend:', response.statusText);
+          }
+        } catch (backendError) {
+          console.error('Error communicating with backend:', backendError);
+        }
+        
+        // Also remove from local storage
+        const { indexedTabs = {} } = await chrome.storage.local.get('indexedTabs');
+        
+        if (indexedTabs[message.tabId]) {
+          delete indexedTabs[message.tabId];
+          
+          // Save back to storage
+          await chrome.storage.local.set({ indexedTabs });
+          console.log('Tab removed from local storage');
+          
+          // Update badge count
+          updateBadgeCount(Object.keys(indexedTabs).length);
+        }
+        
+        // Send success response
+        sendResponse({ 
+          success: true, 
+          backendRemoved: backendRemoved
+        });
+      } catch (error) {
+        console.error('Error in removeTab handler:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    
+    return true; // Keep channel open for async response
+  }
   
   // Return false for unhandled messages
   console.log('Unhandled message action:', message.action);

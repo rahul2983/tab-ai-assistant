@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Indexed Tabs - Tab AI Assistant</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      background-color: #f9f9f9;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    header img {
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+    }
+    
+    h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .search-container {
+      display: flex;
+      max-width: 500px;
+      flex: 1;
+      margin-right: 20px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      font-size: 14px;
+    }
+    
+    button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    button:hover {
+      background: #3367d6;
+    }
+    
+    .action-button {
+      border-radius: 4px;
+    }
+    
+    .tabs-container {
+      max-width: 1200px;
+    }
+    
+    .tabs-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
+    }
+    
+    .tab-card {
+      padding: 16px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .tab-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-card .title {
+      font-size: 16px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .tab-card .title a {
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .tab-card .title a:hover {
+      text-decoration: underline;
+    }
+    
+    .tab-card .url {
+      font-size: 12px;
+      color: #0e774a;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .tab-card .snippet {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #555;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-height: 63px;
+    }
+    
+    .tab-card .timestamp {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .tab-card .actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .tab-card .actions button {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      flex: 1;
+    }
+    
+    .tab-card .btn-open {
+      background-color: #4285f4;
+    }
+    
+    .tab-card .btn-delete {
+      background-color: #ea4335;
+    }
+    
+    .stats {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 0;
+      color: #777;
+    }
+    
+    .loading::after {
+      content: "";
+      width: 20px;
+      height: 20px;
+      margin-left: 10px;
+      border: 2px solid #ccc;
+      border-top-color: #4285f4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .sort-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    
+    .sort-filter label {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    select {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="images/icon48.png" alt="Tab AI Assistant">
+    <h1>All Indexed Tabs</h1>
+  </header>
+  
+  <div class="controls">
+    <div class="search-container">
+      <input type="text" id="filter-input" placeholder="Filter tabs...">
+      <button id="filter-btn">Filter</button>
+    </div>
+    <button id="sync-all-btn" class="action-button">Sync All Tabs</button>
+  </div>
+  
+  <div class="sort-filter">
+    <label for="sort-by">Sort by:</label>
+    <select id="sort-by">
+      <option value="recent">Most Recent</option>
+      <option value="oldest">Oldest First</option>
+      <option value="alphabetical">Alphabetical</option>
+    </select>
+  </div>
+  
+  <div class="stats">
+    <span id="displayed-count">0</span> tabs displayed of <span id="total-count">0</span> indexed tabs
+  </div>
+  
+  <div class="tabs-container">
+    <div id="tabs-list" class="tabs-list">
+      <div class="loading">Loading indexed tabs...</div>
+    </div>
+  </div>
+  
+  <script src="all-tabs.js"></script>
+</body>
+</html>

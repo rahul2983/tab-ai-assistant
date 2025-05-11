@@ -166,6 +166,23 @@
     input:checked + .slider:before {
       transform: translateX(20px);
     }
+
+    .view-links {
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .view-link {
+      color: #4285f4;
+      text-decoration: none;
+      font-size: 14px;
+      display: block;
+      padding: 6px 0;
+    }
+
+    .view-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -185,6 +202,10 @@
     <div class="action-buttons">
       <button id="index-tab-btn">Index Current Tab</button>
       <button id="sync-tabs-btn">Sync All Tabs</button>
+    </div>
+
+    <div class="view-links">
+      <a href="all-tabs.html" id="view-all-tabs" class="view-link" target="_blank">View All Indexed Tabs</a>
     </div>
     
     <div class="status">
