@@ -11,6 +11,7 @@ A Chrome extension that uses AI to index, search, and provide intelligent answer
 - **AI-Powered Answers**: Get AI-generated answers about the content of your tabs
 - **Keyword Highlighting**: Highlight search terms directly in web pages
 - **Tab Management**: View all indexed tabs and their content
+- **Tab Dashboard**: Comprehensive view of all indexed tabs with filtering and sorting options
 
 ## Installation
 
@@ -52,6 +53,16 @@ A Chrome extension that uses AI to index, search, and provide intelligent answer
    - Matching tabs with highlighted keywords
    - Options to open tabs or highlight keywords in the original pages
 
+### Managing Indexed Tabs
+
+1. Click on the Tab AI Assistant icon in your toolbar
+2. Click "View All Indexed Tabs" link
+3. Browse, filter, and manage your indexed tabs:
+   - **Filter**: Use the search box to filter tabs by title, URL, or content
+   - **Sort**: Sort tabs by recency, oldest first, or alphabetically
+   - **Manage**: Open tabs or remove them from your index
+   - **Sync**: Update your tab index by clicking "Sync All Tabs"
+
 ### Settings
 
 Click "Show Settings" in the popup to:
@@ -84,12 +95,18 @@ The extension consists of several key components:
    - Shows matching tabs with relevant snippets
    - Provides options to open tabs or highlight keywords
 
+5. **All Tabs Dashboard** (`all-tabs.html`, `all-tabs.js`):
+   - Displays all indexed tabs in a responsive grid layout
+   - Provides filtering, sorting, and management capabilities
+   - Shows statistics on indexed tabs
+
 ### Data Flow
 
 1. Tab content is extracted using the Chrome Scripting API or content script
 2. Content is processed and sent to the backend API for indexing
 3. Search queries are sent to the backend, which uses RAG to generate AI responses
 4. Results are displayed to the user with relevant context from indexed tabs
+5. Tab management operations (deletion, etc.) are synchronized with both local storage and the backend
 
 ## Technical Details
 
@@ -104,6 +121,7 @@ The extension expects a backend server running at `http://localhost:3000` with t
 
 - `/api/index`: For sending tab content to be indexed
 - `/api/search`: For searching indexed tabs and generating AI responses
+- `/api/remove/:id`: For removing tabs from the index
 
 ## Limitations
 
@@ -124,6 +142,8 @@ tab-ai-assistant/
 ├── popup.js           # Popup functionality
 ├── search.html        # Search results page
 ├── search.js          # Search functionality
+├── all-tabs.html      # All indexed tabs dashboard
+├── all-tabs.js        # All tabs functionality
 └── images/            # Extension icons
 ```
 
