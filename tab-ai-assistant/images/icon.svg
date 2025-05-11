@@ -1,0 +1,20 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="64" cy="64" r="64" fill="#4285f4"/>
+  
+  <!-- Tab icon -->
+  <rect x="28" y="32" width="72" height="54" rx="4" fill="white"/>
+  
+  <!-- Tab content lines -->
+  <rect x="36" y="46" width="56" height="4" rx="2" fill="#e1e1e1"/>
+  <rect x="36" y="56" width="40" height="4" rx="2" fill="#e1e1e1"/>
+  <rect x="36" y="66" width="48" height="4" rx="2" fill="#e1e1e1"/>
+  
+  <!-- Search/Magnifying glass icon -->
+  <circle cx="84" cy="44" r="16" fill="#fbbc05" stroke="white" stroke-width="4"/>
+  <path d="M95 55 L110 70" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- AI indicator -->
+  <circle cx="84" cy="44" r="8" fill="#34a853"/>
+  <text x="84" y="48" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle" fill="white">AI</text>
+</svg>
