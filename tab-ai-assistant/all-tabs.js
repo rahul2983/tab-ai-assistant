@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('All tabs page initialized');
     
     // Elements
+    const queryInput = document.getElementById('query-input');
+    const searchBtn = document.getElementById('search-btn');
     const filterInput = document.getElementById('filter-input');
     const filterBtn = document.getElementById('filter-btn');
     const syncAllBtn = document.getElementById('sync-all-btn');
@@ -11,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabsList = document.getElementById('tabs-list');
     const displayedCount = document.getElementById('displayed-count');
     const totalCount = document.getElementById('total-count');
+    const aiAnswerContainer = document.getElementById('ai-answer-container');
+    const aiResponseElement = document.getElementById('ai-response');
+    const sourceTabsElement = document.getElementById('source-tabs');
     
     // Store all tabs data
     let allTabs = [];
@@ -20,14 +25,24 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllTabs();
     
     // Set up event listeners
-    filterBtn.addEventListener('click', function() {
-      filterTabs(filterInput.value.trim());
+    searchBtn.addEventListener('click', function() {
+      const query = queryInput.value.trim();
+      if (query) {
+        performAISearch(query);
+      }
     });
     
-    filterInput.addEventListener('keypress', function(e) {
+    queryInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        filterTabs(filterInput.value.trim());
+        const query = queryInput.value.trim();
+        if (query) {
+          performAISearch(query);
+        }
       }
+    });
+    
+    filterInput.addEventListener('keyup', function(e) {
+      filterTabs(filterInput.value.trim());
     });
     
     syncAllBtn.addEventListener('click', function() {
@@ -38,6 +53,123 @@ document.addEventListener('DOMContentLoaded', function() {
       sortTabs(sortBySelect.value);
     });
     
+
+    // Add this new function to perform AI search
+    async function performAISearch(query) {
+      try {
+        console.log(`Performing AI search for: ${query}`);
+        
+        // Show AI answer container with loading state
+        aiAnswerContainer.style.display = 'block';
+        aiResponseElement.innerHTML = `Searching your tabs for an answer... <span class="loading-indicator"></span>`;
+        sourceTabsElement.innerHTML = '';
+        
+        // Scroll to bring AI answer into view
+        aiAnswerContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // First, try using the backend API directly
+        try {
+          const API_ENDPOINT = 'http://localhost:3000/api';
+          
+          const response = await fetch(`${API_ENDPOINT}/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ query })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          displayAIAnswer(result, query);
+          
+          // Also filter the tabs to show relevant results
+          filterTabs(query);
+          
+        } catch (apiError) {
+          console.error('Error with direct API call:', apiError);
+          
+          // Try through extension messaging as fallback
+          chrome.runtime.sendMessage({ 
+            action: 'search', 
+            query: query 
+          }, function(response) {
+            if (chrome.runtime.lastError) {
+              showSearchError(`Error: ${chrome.runtime.lastError.message}`);
+              return;
+            }
+            
+            if (response && response.success) {
+              displayAIAnswer(response, query);
+              
+              // Also filter the tabs to show relevant results
+              filterTabs(query);
+            } else {
+              showSearchError(response ? response.error : 'Unknown error');
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error performing AI search:', error);
+        showSearchError(error.message);
+      }
+    }
+
+    // Add this function to display AI answer
+    function displayAIAnswer(result, query) {
+      if (result.ai_answer) {
+        aiResponseElement.textContent = result.ai_answer;
+        
+        // Show source tabs if available
+        if (result.source_tabs && result.source_tabs.length > 0) {
+          const sourcesHtml = `Sources: ${result.source_tabs.map((tab, index) => 
+            `<a href="${tab.url}" target="_blank">[${index + 1}]</a>`
+          ).join(', ')}`;
+          
+          sourceTabsElement.innerHTML = sourcesHtml;
+          
+          // Highlight the source tabs in the list
+          highlightSourceTabs(result.source_tabs.map(tab => tab.id));
+        } else {
+          sourceTabsElement.innerHTML = '';
+        }
+      } else {
+        aiResponseElement.textContent = `No specific answer found for "${query}". Try refining your question.`;
+        sourceTabsElement.innerHTML = '';
+      }
+    }
+
+    // Add this function to show search errors
+    function showSearchError(message) {
+      aiAnswerContainer.style.display = 'block';
+      aiResponseElement.textContent = `Error searching: ${message}`;
+      sourceTabsElement.innerHTML = '';
+    }
+    
+    // Add this function to highlight source tabs in the list
+    function highlightSourceTabs(sourceIds) {
+      // Remove any existing highlights
+      document.querySelectorAll('.tab-card.source-tab').forEach(card => {
+        card.classList.remove('source-tab');
+      });
+      
+      // Add highlight to source tabs
+      sourceIds.forEach(id => {
+        const tabCard = document.querySelector(`.tab-card[data-id="${id}"]`);
+        if (tabCard) {
+          tabCard.classList.add('source-tab');
+          
+          // Ensure the tab is in view
+          setTimeout(() => {
+            tabCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 300);
+        }
+      });
+    }
+
     // Load all indexed tabs from storage
     async function loadAllTabs() {
       try {
@@ -56,6 +188,12 @@ document.addEventListener('DOMContentLoaded', function() {
             url: tab.url,
             title: tab.title || 'Untitled',
             snippet: tab.snippet || 'No preview available',
+            summary: tab.summary || null,
+            readingTime: tab.readingTime || {
+              minutes: null,
+              text: 'Unknown length'
+            },
+            wordCount: tab.wordCount || null,
             lastUpdated: tab.lastUpdated || new Date().toISOString()
           }));
           
@@ -114,6 +252,22 @@ document.addEventListener('DOMContentLoaded', function() {
           // Sort alphabetically by title
           filteredTabs.sort((a, b) => a.title.localeCompare(b.title));
           break;
+        case 'longest':
+          // Sort by reading time (longest first)
+          filteredTabs.sort((a, b) => {
+            const timeA = a.readingTime && a.readingTime.minutes ? a.readingTime.minutes : 0;
+            const timeB = b.readingTime && b.readingTime.minutes ? b.readingTime.minutes : 0;
+            return timeB - timeA;
+          });
+          break;
+        case 'shortest':
+          // Sort by reading time (shortest first)
+          filteredTabs.sort((a, b) => {
+            const timeA = a.readingTime && a.readingTime.minutes ? a.readingTime.minutes : 999;
+            const timeB = b.readingTime && b.readingTime.minutes ? b.readingTime.minutes : 999;
+            return timeA - timeB;
+          });
+          break;
       }
       
       // Render tabs
@@ -138,7 +292,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <a href="${tab.url}" target="_blank" title="${tab.title}">${tab.title}</a>
           </div>
           <div class="url" title="${tab.url}">${formatUrl(tab.url)}</div>
-          <div class="snippet">${tab.snippet}</div>
+          <div class="reading-time">${tab.readingTime ? tab.readingTime.text : 'Unknown length'}</div>
+          <div class="summary">${tab.summary || tab.snippet || 'No preview available'}</div>
           <div class="timestamp">Indexed: ${formatTimestamp(tab.lastUpdated)}</div>
           <div class="actions">
             <button class="btn-open" data-url="${tab.url}">Open Tab</button>

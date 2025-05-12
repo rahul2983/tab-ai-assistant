@@ -58,3 +58,10 @@ data/local/
 .vscode/
 *.sublime-project
 *.sublime-workspace
+
+# Ignore user data
+data/metadata.json
+data/vectors.json
+
+# But keep the directory structure
+!data/.gitkeep

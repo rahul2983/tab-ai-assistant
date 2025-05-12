@@ -142,20 +142,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Display results
     if (data.results && data.results.length > 0) {
-      const resultsHtml = data.results.map(result => `
-        <div class="result-item">
-          <div class="title">
-            <a href="${result.url}" target="_blank">${highlightMatches(result.title || 'Untitled', query)}</a>
+      const resultsHtml = data.results.map(result => {
+        // Check if we have a reading time to display
+        const readingTimeHtml = result.readingTime ? 
+          `<div class="reading-time">${result.readingTime.text}</div>` : '';
+        
+        // Use summary if available, fallback to snippet
+        const summaryText = result.summary || result.snippet || 'No preview available';
+        
+        return `
+          <div class="result-item">
+            <div class="title">
+              <a href="${result.url}" target="_blank">${highlightMatches(result.title || 'Untitled', query)}</a>
+            </div>
+            <div class="url">${formatUrl(result.url)}</div>
+            ${readingTimeHtml}
+            <div class="summary">${highlightMatches(summaryText, query)}</div>
+            <div class="timestamp">Indexed: ${formatTimestamp(result.timestamp)}</div>
+            <div class="actions">
+              <button class="btn-open" data-url="${result.url}">Open Tab</button>
+              <button class="btn-highlight" data-url="${result.url}">Highlight Keywords</button>
+            </div>
           </div>
-          <div class="url">${formatUrl(result.url)}</div>
-          <div class="snippet">${highlightMatches(result.snippet || 'No preview available', query)}</div>
-          <div class="timestamp">Indexed: ${formatTimestamp(result.timestamp)}</div>
-          <div class="actions">
-            <button class="btn-open" data-url="${result.url}">Open Tab</button>
-            <button class="btn-highlight" data-url="${result.url}">Highlight Keywords</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
       
       resultsContainer.innerHTML = resultsHtml;
       

@@ -8,7 +8,7 @@ module.exports = {
   },
   pinecone: {
     apiKey: process.env.PINECONE_API_KEY,
-    environment: process.env.PINECONE_ENVIRONMENT,
+    // environment: process.env.PINECONE_ENVIRONMENT,
     index: process.env.PINECONE_INDEX || 'tab-assistant-index'
   },
   server: {

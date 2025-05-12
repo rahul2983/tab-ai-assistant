@@ -1,5 +1,5 @@
 // services/vectorService.js
-// Pinecone Serverless implementation
+// Updated for Pinecone SDK v6.0.0
 
 const { Pinecone } = require('@pinecone-database/pinecone');
 const openaiService = require('./openaiService');
@@ -10,10 +10,6 @@ console.log('Initializing vectorService with Pinecone Serverless...');
 // Verify environment variables
 if (!config.pinecone.apiKey) {
   console.error('PINECONE_API_KEY is not set in environment variables');
-}
-
-if (!config.pinecone.region) {
-  console.error('PINECONE_REGION is not set in environment variables');
 }
 
 if (!config.pinecone.index) {
@@ -30,22 +26,20 @@ let initializationError = null;
 try {
   console.log(`Initializing Pinecone client with serverless configuration`);
   console.log(`API Key: ${config.pinecone.apiKey ? '✓ Set' : '✗ Not set'}`);
-  console.log(`Cloud: aws`); // Added cloud provider
-  console.log(`Region: ${config.pinecone.region || 'us-east-1'}`);
   
-  // Correct serverless initialization
+  // Get the SDK version
+  const sdkVersion = require('@pinecone-database/pinecone/package.json').version;
+  console.log(`Detected Pinecone SDK v${sdkVersion}`);
+  
+  // Initialize Pinecone client with SDK v6.0.0 format (simplified)
   pinecone = new Pinecone({
-    apiKey: config.pinecone.apiKey,
-    // Serverless configuration
-    serverlessSpec: {
-      cloud: 'aws', // or 'gcp' if using Google Cloud
-      region: config.pinecone.region || 'us-east-1'
-    }
+    apiKey: config.pinecone.apiKey
   });
   
   console.log('Pinecone client initialized');
 } catch (error) {
   console.error('Error initializing Pinecone client:', error);
+  console.error('Error details:', error.stack);
   initializationError = error;
 }
 
@@ -74,49 +68,8 @@ async function initializeIndex(retries = 3) {
   try {
     console.log(`Connecting to Pinecone index: ${config.pinecone.index}`);
     
-    // List all available indexes with timeout
-    const listPromise = pinecone.listIndexes();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout listing Pinecone indexes')), 10000)
-    );
-    
-    const indexList = await Promise.race([listPromise, timeoutPromise]);
-    console.log('Available Pinecone indexes:', indexList);
-    
-    // Check if our index exists
-    const indexExists = indexList.includes(config.pinecone.index);
-    if (!indexExists) {
-      if (process.env.AUTO_CREATE_INDEX === 'true') {
-        console.log(`Index ${config.pinecone.index} not found. Creating new serverless index...`);
-        
-        // Create serverless index with proper configuration
-        await pinecone.createIndex({
-          name: config.pinecone.index,
-          dimension: 1536, // For OpenAI embeddings
-          metric: 'cosine',
-          spec: {
-            serverless: {
-              cloud: 'aws',
-              region: config.pinecone.region || 'us-east-1'
-            }
-          }
-        });
-        
-        console.log(`Serverless index ${config.pinecone.index} creation initiated.`);
-        console.log(`Waiting for initialization...`);
-        
-        // Wait for index to initialize (this can take time)
-        await new Promise(resolve => setTimeout(resolve, 60000)); // 1 minute
-        
-        console.log('Index initialization wait time complete');
-      } else {
-        throw new Error(`Pinecone index "${config.pinecone.index}" does not exist. Available indexes: ${indexList.join(', ')}`);
-      }
-    }
-    
-    // For serverless indexes, use Index() method (capital I)
-    console.log(`Connecting to serverless index: ${config.pinecone.index}`);
-    index = pinecone.Index(config.pinecone.index);
+    // Connect to the index using SDK v6.0.0 format
+    index = pinecone.index(config.pinecone.index);
     
     // Test the connection with a simple stats call
     const statsPromise = index.describeIndexStats();
@@ -125,7 +78,11 @@ async function initializeIndex(retries = 3) {
     );
     
     const stats = await Promise.race([statsPromise, statsTimeoutPromise]);
-    console.log(`Successfully connected to serverless index. Current vector count: ${stats.totalVectorCount}`);
+    
+    // SDK v6.0.0 returns totalRecordCount instead of totalVectorCount
+    const vectorCount = stats.totalRecordCount || stats.totalVectorCount || 0;
+                      
+    console.log(`Successfully connected to index. Current vector count: ${vectorCount}`);
     
     // Mark as initialized
     indexInitialized = true;
@@ -149,7 +106,6 @@ async function initializeIndex(retries = 3) {
   }
 }
 
-// The rest of your functions remain the same
 /**
  * Index a tab's content in the vector database with fallback
  * @param {Object} tabData - Tab data to index
@@ -169,28 +125,53 @@ async function indexTabContent(tabData) {
       console.log(`Generated embedding for tab: ${tabData.title}`);
       
       // Prepare metadata (limited to what Pinecone allows)
+      // IMPORTANT: Pinecone SDK v6.0.0 does not allow null values in metadata
       const metadata = {
         url: tabData.url,
         title: tabData.title,
         snippet: tabData.content.text.substring(0, 500), // Limited preview
-        timestamp: tabData.timestamp,
-        parentId: tabData.parentId || null,
+        timestamp: tabData.timestamp || Date.now(), // Ensure timestamp is not null
         chunkIndex: tabData.chunkIndex || 0,
         totalChunks: tabData.totalChunks || 1
       };
       
+      // Only add optional fields if they exist and are not null
+      if (tabData.parentId) {
+        metadata.parentId = tabData.parentId;
+      }
+      
+      if (tabData.summary) {
+        metadata.summary = tabData.summary;
+      }
+      
+      if (tabData.readingTime) {
+        if (tabData.readingTime.text) {
+          metadata.readingTimeText = tabData.readingTime.text;
+        }
+        if (typeof tabData.readingTime.minutes === 'number') {
+          metadata.readingTimeMinutes = tabData.readingTime.minutes;
+        }
+      }
+      
+      if (tabData.wordCount) {
+        metadata.wordCount = tabData.wordCount;
+      }
+      
       // Use provided ID or generate one
       const id = tabData.id || generateTabId(tabData.url);
       
-      // Upsert to Pinecone with timeout
+      // Upsert to Pinecone - SDK v6.0.0 format
       console.log(`Upserting tab to Pinecone with ID: ${id}`);
       
-      const upsertPromise = pineconeIndex.upsert([{
-        id: id,
+      // Define the record to upsert (SDK v6.0.0 uses 'records' instead of 'vectors')
+      const record = {
+        id,
         values: embedding,
-        metadata: metadata
-      }]);
+        metadata
+      };
       
+      // Use a timeout promise to prevent hanging
+      const upsertPromise = pineconeIndex.upsert([record]);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout upserting to Pinecone')), 10000)
       );
@@ -199,24 +180,40 @@ async function indexTabContent(tabData) {
       
       console.log(`Successfully indexed tab in Pinecone: ${tabData.title}`);
       
-      return { success: true, id: id };
+      return { 
+        success: true, 
+        id: id,
+        summary: tabData.summary || null,
+        readingTime: tabData.readingTime || null,
+        wordCount: tabData.wordCount || null
+      };
     } catch (pineconeError) {
       console.error('Error with Pinecone, using fallback storage:', pineconeError);
       
       // Store in local memory as fallback (replace with proper local storage in production)
       const id = tabData.id || generateTabId(tabData.url);
       
-      // Store in local fallback (this is just for development)
+      // Store in local fallback
       localFallbackStore[id] = {
         url: tabData.url,
         title: tabData.title,
         content: tabData.content.text,
-        timestamp: tabData.timestamp
+        timestamp: tabData.timestamp || Date.now(),
+        summary: tabData.summary || null,
+        readingTime: tabData.readingTime || null,
+        wordCount: tabData.wordCount || null
       };
       
       console.log(`Used fallback storage for tab: ${tabData.title}`);
       
-      return { success: true, id: id, fromFallback: true };
+      return { 
+        success: true, 
+        id: id, 
+        fromFallback: true,
+        summary: tabData.summary || null,
+        readingTime: tabData.readingTime || null,
+        wordCount: tabData.wordCount || null
+      };
     }
   } catch (error) {
     console.error('Error indexing tab:', error);
@@ -243,30 +240,58 @@ async function searchTabsByVector(query, limit = 10) {
       
       console.log(`Generated query embedding, searching Pinecone...`);
       
-      // Search in Pinecone with timeout
-      const searchPromise = pineconeIndex.query({
+      // SDK v6.0.0 query format
+      const queryParams = {
         vector: queryEmbedding,
         topK: limit,
         includeMetadata: true
-      });
+      };
       
+      // Use a timeout promise to prevent hanging
+      const searchPromise = pineconeIndex.query(queryParams);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout searching Pinecone')), 10000)
+        setTimeout(() => reject(new Error('Search timeout')), 10000)
       );
       
       const results = await Promise.race([searchPromise, timeoutPromise]);
       
-      console.log(`Pinecone search returned ${results.matches.length} results`);
+      // Get matches from results (SDK v6.0.0 format)
+      const matches = results.matches || [];
       
-      // Format and return results
-      return results.matches.map(match => ({
-        id: match.id,
-        url: match.metadata.url,
-        title: match.metadata.title,
-        snippet: match.metadata.snippet,
-        score: match.score,
-        timestamp: match.metadata.timestamp
-      }));
+      console.log(`Pinecone search returned ${matches.length} results`);
+      
+      // Format and return results with proper null handling
+      return matches.map(match => {
+        const metadata = match.metadata || {};
+        
+        // Create result object with guaranteed fields
+        const result = {
+          id: match.id,
+          score: match.score,
+          url: metadata.url || '',
+          title: metadata.title || '',
+          snippet: metadata.snippet || '',
+          timestamp: metadata.timestamp || 0
+        };
+        
+        // Add optional fields only if they exist
+        if (metadata.summary) {
+          result.summary = metadata.summary;
+        }
+        
+        if (metadata.readingTimeText || metadata.readingTimeMinutes) {
+          result.readingTime = {
+            text: metadata.readingTimeText || '',
+            minutes: metadata.readingTimeMinutes || 0
+          };
+        }
+        
+        if (metadata.wordCount) {
+          result.wordCount = metadata.wordCount;
+        }
+        
+        return result;
+      });
     } catch (pineconeError) {
       console.error('Error with Pinecone search, using fallback:', pineconeError);
       
@@ -292,7 +317,7 @@ async function removeTabFromIndex(id) {
       // Initialize index if needed
       const pineconeIndex = await initializeIndex();
       
-      // Delete from Pinecone with timeout
+      // SDK v6.0.0 format for deleting records
       const deletePromise = pineconeIndex.deleteOne(id);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout deleting from Pinecone')), 10000)
@@ -346,9 +371,13 @@ async function getIndexStats() {
       
       console.log('Pinecone stats:', stats);
       
+      // SDK v6.0.0 returns different stats format
+      const totalVectors = stats.totalRecordCount || stats.totalVectorCount || 0;
+      const namespaces = stats.namespaces || {};
+      
       return {
-        totalVectors: stats.totalVectorCount,
-        namespaces: stats.namespaces,
+        totalVectors,
+        namespaces,
         fallbackCount: Object.keys(localFallbackStore).length
       };
     } catch (pineconeError) {
@@ -408,6 +437,9 @@ function searchLocalFallback(query, limit) {
         url: data.url,
         title: data.title,
         snippet: data.content.substring(0, 200),
+        summary: data.summary || null,
+        readingTime: data.readingTime || null,
+        wordCount: data.wordCount || null,
         score: score,
         timestamp: data.timestamp,
         fromFallback: true
