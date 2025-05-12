@@ -109,7 +109,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// Send data to backend
+// In background.js, update the sendToBackend function to handle timeouts more robustly:
+
 async function sendToBackend(endpoint, data) {
   try {
     console.log(`Sending request to ${API_ENDPOINT}${endpoint}`);
@@ -120,34 +121,50 @@ async function sendToBackend(endpoint, data) {
 
     console.log('Request data:', data);
     
-    const response = await fetch(API_ENDPOINT + endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data),
-      signal: controller.signal
-    });
+    try {
+      const response = await fetch(API_ENDPOINT + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal
+      });
 
-    // Clear the timeout
-    clearTimeout(timeoutId);
-    
-    console.log(`Response status: ${response.status}`);
-    
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      // Clear the timeout
+      clearTimeout(timeoutId);
+      
+      console.log(`Response status: ${response.status}`);
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Response data:', result);
+      return result;
+    } catch (fetchError) {
+      // Clear the timeout to prevent memory leaks
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('Request timed out after 10 seconds');
+        return { 
+          success: false, 
+          error: 'Request timed out after 10 seconds',
+          fallback: true 
+        };
+      }
+      
+      throw fetchError;
     }
-    
-    const result = await response.json();
-    console.log('Response data:', result);
-    return result;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('Request timed out after 10 seconds');
-    } else {
-      console.error('Error sending data to backend:', error);
-    }
-    throw error;
+    console.error('Error sending data to backend:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      fallback: true 
+    };
   }
 }
 
@@ -210,6 +227,11 @@ async function processTab(tab) {
     console.log('Sending data to backend...');
     const result = await sendToBackend('/index', tabData);
     
+    // Fix for the hanging issue in processTab function in background.js
+
+    // The issue might be in how we handle the result from the backend
+    // Here's a safer implementation that won't hang when certain fields are missing:
+
     if (result.success) {
       console.log(`Successfully indexed tab: ${tab.title}`);
       
@@ -219,11 +241,48 @@ async function processTab(tab) {
       // Generate tab ID if not provided by backend
       const tabId = result.id || await generateTabId(tab.url);
       
-      // Update the indexed tabs
+      // Extract text content safely
+      const textContent = content && content.text ? content.text : '';
+      
+      // Create a simple snippet from the content
+      const snippet = textContent.substring(0, 200) + (textContent.length > 200 ? '...' : '');
+      
+      // Extract summary if available, or use snippet
+      let summary = '';
+      if (result.summary) {
+        summary = result.summary;
+      } else if (content && content.summary) {
+        summary = content.summary;
+      } else {
+        summary = snippet;
+      }
+      
+      // Calculate basic reading time
+      let readingTime = null;
+      if (result.readingTime) {
+        readingTime = result.readingTime;
+      } else if (textContent) {
+        const wordCount = textContent.split(/\s+/).filter(Boolean).length;
+        const minutes = Math.ceil(wordCount / 200);
+        readingTime = {
+          minutes: minutes,
+          text: minutes === 1 ? '1 minute read' : `${minutes} minute read`
+        };
+      } else {
+        readingTime = {
+          minutes: 0,
+          text: 'Unknown length'
+        };
+      }
+      
+      // Update the indexed tabs with safe defaults for all fields
       indexedTabs[tabId] = {
         url: tab.url,
-        title: tab.title,
-        snippet: content.text.substring(0, 200),
+        title: tab.title || 'Untitled',
+        snippet: snippet,
+        summary: summary,
+        readingTime: readingTime,
+        wordCount: result.wordCount || (textContent ? textContent.split(/\s+/).filter(Boolean).length : 0),
         lastUpdated: new Date().toISOString()
       };
       

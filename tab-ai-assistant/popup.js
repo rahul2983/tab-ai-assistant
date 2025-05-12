@@ -164,12 +164,25 @@ function performSearch() {
   });
 }
 
-// Function to index current tab
+// In popup.js, update the indexCurrentTab function for better error handling:
+
 function indexCurrentTab() {
   if (!indexTabBtn) return;
   
   indexTabBtn.textContent = 'Indexing...';
   indexTabBtn.disabled = true;
+  
+  // Set a timeout for the indexing operation
+  let indexingTimeout = setTimeout(() => {
+    console.error('Indexing operation timed out');
+    indexTabBtn.textContent = 'Timeout Error';
+    
+    // Reset button after a delay
+    setTimeout(() => {
+      indexTabBtn.textContent = 'Index Current Tab';
+      indexTabBtn.disabled = false;
+    }, 2000);
+  }, 15000); // 15 second timeout
   
   // Get the current tab
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
@@ -184,6 +197,9 @@ function indexCurrentTab() {
         url: currentTab.url,
         title: currentTab.title
       }, function(response) {
+        // Clear the timeout since we got a response
+        clearTimeout(indexingTimeout);
+        
         console.log('Background script response:', response);
         
         if (response && response.success) {
@@ -211,6 +227,9 @@ function indexCurrentTab() {
         }
       });
     } else {
+      // Clear the timeout if no tabs found
+      clearTimeout(indexingTimeout);
+      
       indexTabBtn.textContent = 'No active tab';
       console.error('No active tab found');
       

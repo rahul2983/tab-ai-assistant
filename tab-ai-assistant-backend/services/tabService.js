@@ -20,6 +20,12 @@ async function indexTab(tabData) {
         id: null
       };
     }
+
+    // Enhance tab content with summaries and reading time
+    const enhancedTabData = await enhanceTabContent({
+      ...tabData,
+      content: processedContent
+    });
     
     // If content is very large, split into chunks
     let indexResults = [];
@@ -211,8 +217,75 @@ function generateTabId(url) {
   return Math.abs(hash).toString(16);
 }
 
+// / Add this new function to tabService.js to generate summaries and calculate reading time
+
+/**
+ * Enhance tab content with summaries and reading time estimates
+ * @param {Object} tabData - Tab data to enhance
+ * @returns {Promise<Object>} - Enhanced tab data
+ */
+async function enhanceTabContent(tabData) {
+  try {
+    console.log(`Enhancing content for tab: ${tabData.title}`);
+    
+    // Get the text content
+    const text = tabData.content.text || '';
+    
+    // Calculate reading time (average reading speed is about 200-250 words per minute)
+    // We'll use a conservative 200 wpm
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const readingTimeMinutes = Math.ceil(wordCount / 200);
+    
+    // Prepare enhanced metadata
+    const enhancedMeta = {
+      ...(tabData.content.meta || {}),
+      wordCount,
+      readingTimeMinutes,
+      readingTimeText: readingTimeMinutes === 1 
+        ? '1 minute read' 
+        : `${readingTimeMinutes} minute read`
+    };
+    
+    // If the content is very long, generate a summary using OpenAI
+    let summary = null;
+    
+    if (text.length > 1000) {
+      try {
+        // Import openaiService to generate summaries
+        const openaiService = require('./openaiService');
+        
+        // Generate a summary (limited to ~2 sentences)
+        summary = await openaiService.generateTabSummary(text, tabData.title);
+        console.log(`Generated summary for ${tabData.title}: ${summary.substring(0, 100)}...`);
+      } catch (summaryError) {
+        console.error('Error generating summary:', summaryError);
+        // If there's an error, create a simple excerpt
+        summary = text.substring(0, 200) + '...';
+      }
+    } else {
+      // For short content, use the first 200 characters as the summary
+      summary = text.substring(0, 200) + (text.length > 200 ? '...' : '');
+    }
+    
+    // Return enhanced tab data
+    return {
+      ...tabData,
+      content: {
+        text: tabData.content.text,
+        meta: enhancedMeta
+      },
+      summary
+    };
+  } catch (error) {
+    console.error('Error enhancing tab content:', error);
+    // Return original tab data if enhancement fails
+    return tabData;
+  }
+}
+
 module.exports = {
   indexTab,
   syncTabs,
-  removeTab
+  removeTab,
+  enhanceTabContent // Add this export
 };

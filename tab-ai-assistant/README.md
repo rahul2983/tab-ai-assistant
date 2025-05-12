@@ -9,9 +9,11 @@ A Chrome extension that uses AI to index, search, and provide intelligent answer
 - **Automatic Tab Indexing**: Captures and indexes content from your browser tabs automatically
 - **Intelligent Search**: Search through your tabs with natural language queries
 - **AI-Powered Answers**: Get AI-generated answers about the content of your tabs
+- **Tab Summaries**: AI-generated concise summaries of each tab's content
+- **Reading Time Estimates**: Calculate and display estimated reading time for each indexed tab
 - **Keyword Highlighting**: Highlight search terms directly in web pages
 - **Tab Management**: View all indexed tabs and their content
-- **Tab Dashboard**: Comprehensive view of all indexed tabs with filtering and sorting options
+- **Tab Dashboard**: Comprehensive view of all indexed tabs with filtering, sorting, and AI search capabilities
 
 ## Installation
 
@@ -50,18 +52,22 @@ A Chrome extension that uses AI to index, search, and provide intelligent answer
 3. Press Enter or click the "Search" button
 4. View results including:
    - AI-generated answers based on your tabs' content
-   - Matching tabs with highlighted keywords
+   - Matching tabs with highlighted keywords, summaries, and reading times
    - Options to open tabs or highlight keywords in the original pages
 
-### Managing Indexed Tabs
+### Tab Dashboard with AI Search
 
 1. Click on the Tab AI Assistant icon in your toolbar
 2. Click "View All Indexed Tabs" link
-3. Browse, filter, and manage your indexed tabs:
-   - **Filter**: Use the search box to filter tabs by title, URL, or content
-   - **Sort**: Sort tabs by recency, oldest first, or alphabetically
+3. Use the dashboard's features:
+   - **AI Search**: Ask questions about your tabs and get AI-generated answers
+   - **Filter**: Use the filter box to search for specific tabs by title, URL, or content
+   - **Sort**: Sort tabs by recency, oldest first, alphabetically, or by reading time
+   - **View**: See tab summaries and reading time estimates at a glance
    - **Manage**: Open tabs or remove them from your index
    - **Sync**: Update your tab index by clicking "Sync All Tabs"
+
+The dashboard will highlight source tabs referenced in AI answers, making it easy to find relevant information.
 
 ### Settings
 
@@ -92,21 +98,24 @@ The extension consists of several key components:
 
 4. **Search Results Page** (`search.html`, `search.js`):
    - Displays search results with AI-generated answers
-   - Shows matching tabs with relevant snippets
+   - Shows matching tabs with summaries and reading times
    - Provides options to open tabs or highlight keywords
 
 5. **All Tabs Dashboard** (`all-tabs.html`, `all-tabs.js`):
-   - Displays all indexed tabs in a responsive grid layout
+   - Provides a central hub for viewing and searching all indexed tabs
+   - Offers AI-powered search directly from the dashboard
+   - Displays tabs with summaries and reading times in a responsive grid layout
    - Provides filtering, sorting, and management capabilities
-   - Shows statistics on indexed tabs
+   - Highlights source tabs referenced in AI answers
 
 ### Data Flow
 
 1. Tab content is extracted using the Chrome Scripting API or content script
-2. Content is processed and sent to the backend API for indexing
-3. Search queries are sent to the backend, which uses RAG to generate AI responses
-4. Results are displayed to the user with relevant context from indexed tabs
-5. Tab management operations (deletion, etc.) are synchronized with both local storage and the backend
+2. Content is processed, enhanced with summaries and reading time estimates
+3. Enhanced content is sent to the backend API for indexing
+4. Search queries are sent to the backend, which uses RAG to generate AI responses
+5. Results are displayed to the user with relevant context from indexed tabs
+6. Tab management operations (deletion, etc.) are synchronized with both local storage and the backend
 
 ## Technical Details
 
@@ -114,6 +123,8 @@ The extension consists of several key components:
 - Implements debouncing to avoid excessive processing during tab navigation
 - Handles timeouts and fallbacks for robust operation
 - Provides both direct API communication and messaging-based fallbacks
+- Uses AI to generate concise, meaningful summaries of tab content
+- Calculates reading time based on word count (average reading speed of 200 words per minute)
 
 ## Backend Requirements
 
@@ -128,6 +139,7 @@ The extension expects a backend server running at `http://localhost:3000` with t
 - Currently only works with a local backend server
 - Some websites may block content extraction
 - Performance may vary with large numbers of tabs
+- Summary generation requires OpenAI API access and may incur costs
 
 ## Development
 
@@ -142,7 +154,7 @@ tab-ai-assistant/
 ├── popup.js           # Popup functionality
 ├── search.html        # Search results page
 ├── search.js          # Search functionality
-├── all-tabs.html      # All indexed tabs dashboard
+├── all-tabs.html      # All indexed tabs dashboard with AI search
 ├── all-tabs.js        # All tabs functionality
 └── images/            # Extension icons
 ```
@@ -163,4 +175,3 @@ tab-ai-assistant/
 
 - Built with Chrome Extensions API
 - Uses OpenAI for AI-powered answers
-- Implements RAG (Retrieval-Augmented Generation) for enhanced context awareness
