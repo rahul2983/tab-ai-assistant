@@ -358,6 +358,383 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .category-section {
+      max-width: 1200px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .categories-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .categories-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #202124;
+    }
+
+    .small-button {
+      background: #f1f3f4;
+      color: #5f6368;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .small-button:hover {
+      background: #e8eaed;
+      color: #202124;
+    }
+
+    .category-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .category-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f3f4;
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .category-pill:hover {
+      background: #e8eaed;
+    }
+
+    .category-pill.active {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .category-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .category-count {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      font-size: 11px;
+      padding: 0 6px;
+    }
+
+    /* Notes Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background-color: white;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: #202124;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      color: #5f6368;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      max-height: calc(90vh - 120px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .note-item {
+      padding: 12px;
+      background-color: #f1f3f4;
+      border-radius: 8px;
+      border-left: 4px solid #4285f4;
+    }
+
+    .note-content {
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .note-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #5f6368;
+    }
+
+    .note-delete {
+      background: none;
+      border: none;
+      color: #ea4335;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .note-delete:hover {
+      background-color: rgba(234, 67, 53, 0.1);
+    }
+
+    .new-note-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #new-note-content {
+      width: 100%;
+      height: 100px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    .save-note-btn {
+      align-self: flex-end;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .save-note-btn:hover {
+      background-color: #3367d6;
+    }
+
+    .save-note-btn:disabled {
+      background-color: #a7c0f4;
+      cursor: not-allowed;
+    }
+
+    .loading, .no-notes, .error {
+      padding: 16px;
+      text-align: center;
+      color: #5f6368;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #ea4335;
+    }
+
+    /* Addition to tab-card actions */
+    .tab-card .btn-notes {
+      background-color: #fbbc05;
+      color: white;
+    }
+
+    .tab-card .btn-notes:hover {
+      background-color: #e2a403;
+    }
+
+    .advanced-filters {
+      margin-top: 10px;
+    }
+
+    .filters-panel {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      border: 1px solid #eee;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group-label {
+      font-size: 12px;
+      color: #5f6368;
+    }
+
+    .filter-select {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .suggestion-item {
+      padding: 12px;
+      background-color: #f1f3f4;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.3s;
+    }
+
+    .suggestion-item.kept {
+      background-color: #e6f4ea;
+      border-left: 4px solid #34a853;
+    }
+
+    .suggestion-item.removing {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .suggestion-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .suggestion-url {
+      font-size: 12px;
+      color: #0e774a;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .suggestion-keep, .suggestion-close {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .suggestion-keep {
+      background-color: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .suggestion-close {
+      background-color: #fad2cf;
+      color: #d93025;
+    }
+
+    .kept-label {
+      display: inline-block;
+      padding: 6px 12px;
+      background-color: #e6f4ea;
+      color: #34a853;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .suggestions-intro {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #5f6368;
+    }
+
+    .suggestions-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .no-suggestions {
+      padding: 16px;
+      text-align: center;
+      color: #5f6368;
+      font-size: 14px;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .secondary {
+      background-color: #f1f3f4;
+      color: #5f6368;
+    }
   </style>
 </head>
 <body>
@@ -378,11 +755,56 @@
     <p id="ai-response">Loading answer...</p>
     <div id="source-tabs" class="source-tabs"></div>
   </div>
+
+  <div class="category-section">
+    <div id="category-container" class="category-container">
+      <!-- Categories will be loaded here dynamically -->
+      <p>No categories yet. Click "Categorize Tabs" to generate categories.</p>
+    </div>
+    <button id="categorize-btn" class="action-button">Categorize Tabs</button>
+  </div>
   
   <div class="tabs-controls">
     <div class="filter-section">
       <label for="filter-input" class="filter-label">Filter tabs:</label>
       <input type="text" id="filter-input" placeholder="Filter by title, URL, or content...">
+
+      <!-- New advanced filters -->
+    <div class="advanced-filters">
+      <button id="show-filters-btn" class="small-button">Advanced Filters</button>
+      
+      <div id="filters-panel" class="filters-panel" style="display: none;">
+        <div class="filter-group">
+          <label class="filter-group-label">Filter by domain:</label>
+          <select id="domain-filter" class="filter-select">
+            <option value="">All domains</option>
+            <!-- Domains will be loaded dynamically -->
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-group-label">Filter by date:</label>
+          <select id="date-filter" class="filter-select">
+            <option value="">Any time</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-group-label">Reading time:</label>
+          <select id="reading-time-filter" class="filter-select">
+            <option value="">Any length</option>
+            <option value="short">Short (< 2 min)</option>
+            <option value="medium">Medium (2-5 min)</option>
+            <option value="long">Long (> 5 min)</option>
+          </select>
+        </div>
+        
+        <button id="reset-filters-btn" class="small-button">Reset Filters</button>
+      </div>
     </div>
     
     <div class="sort-section">
@@ -412,5 +834,6 @@
   </div>
   
   <script src="all-tabs.js"></script>
+  <script src="js/notes.js"></script>
 </body>
 </html>
