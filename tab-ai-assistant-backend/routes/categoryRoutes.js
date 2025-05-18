@@ -40,45 +40,4 @@ router.post('/categorize', async (req, res, next) => {
 
 /**
  * @route POST /api/categorize-with-details
- * @description Categorize tabs with provided details
- * @access Public
- */
-router.post('/categorize-with-details', async (req, res, next) => {
-  try {
-    const { tabs } = req.body;
-    
-    if (!Array.isArray(tabs) || tabs.length === 0) {
-      return res.status(400).json({ error: 'Tabs array is required' });
-    }
-    
-    // Process and categorize tabs with details
-    const categories = await categoryService.categorizeTabsWithDetails(tabs);
-    
-    res.status(200).json({
-      success: true,
-      categories
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * @route GET /api/categories
- * @description Get all available categories
- * @access Public
- */
-router.get('/categories', async (req, res, next) => {
-  try {
-    const categories = await categoryService.getAllCategories();
-    
-    res.status(200).json({
-      success: true,
-      categories
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-module.exports = router;
+ * @description Categorize tabs wit

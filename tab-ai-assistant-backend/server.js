@@ -68,14 +68,4 @@ app.use((err, req, res, next) => {
 });
 
 // For local development only
-if (process.env.NODE_ENV !== 'production') {
-  // Start server for local development
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Root URL: http://localhost:${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/health`);
-  });
-}
-
-// Export the Express app for serverless functions
-module.exports = app;
+if (proc
