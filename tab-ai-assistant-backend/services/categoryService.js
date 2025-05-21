@@ -159,4 +159,146 @@ async function generateCategories(tabsText) {
       response_format: { type: "json_object" }
     });
     
-    const categoriesText = res
+    const categoriesText = response.choices[0].message.content;
+    try {
+      // Parse the JSON response
+      const categories = JSON.parse(categoriesText);
+      return categories;
+    } catch (parseError) {
+      console.error('Error parsing categories JSON:', parseError);
+      // Fall back to simple categorization
+      return generateSimpleCategories(tabsText);
+    }
+  } catch (error) {
+    console.error('Error generating categories with OpenAI:', error);
+    // Fall back to simple categorization
+    return generateSimpleCategories(tabsText);
+  }
+}
+
+/**
+ * Generate simple domain-based categories without AI
+ * @param {string} tabsText - Formatted text of tabs
+ * @returns {Promise<Object>} - Object with category names as keys and arrays of tab IDs as values
+ */
+function generateSimpleCategories(tabsText) {
+  try {
+    console.log('Generating simple categories based on domains');
+    
+    // Parse tab IDs and URLs from text
+    const categories = {};
+    const tabs = tabsText.split('\n\n').map(tabText => {
+      const lines = tabText.split('\n');
+      const idLine = lines.find(line => line.startsWith('ID:'));
+      const urlLine = lines.find(line => line.startsWith('URL:'));
+      
+      if (!idLine || !urlLine) return null;
+      
+      const id = idLine.substring(4).trim();
+      const url = urlLine.substring(5).trim();
+      
+      return { id, url };
+    }).filter(Boolean);
+    
+    // Group by domain
+    tabs.forEach(tab => {
+      try {
+        const url = new URL(tab.url);
+        let domain = url.hostname.replace(/^www\./, '');
+        
+        // Extract domain category
+        let category = 'Other';
+        
+        // Handle common domains
+        if (domain.includes('github.com')) {
+          category = 'Development';
+        } else if (domain.includes('google.com')) {
+          category = 'Google';
+        } else if (domain.includes('youtube.com')) {
+          category = 'Entertainment';
+        } else if (domain.includes('twitter.com') || domain.includes('x.com')) {
+          category = 'Social Media';
+        } else if (domain.includes('facebook.com')) {
+          category = 'Social Media';
+        } else if (domain.includes('linkedin.com')) {
+          category = 'Professional';
+        } else if (domain.includes('amazon.com')) {
+          category = 'Shopping';
+        } else if (domain.includes('reddit.com')) {
+          category = 'Social Media';
+        } else {
+          // Use domain as category
+          const parts = domain.split('.');
+          if (parts.length >= 2) {
+            category = parts[parts.length - 2].charAt(0).toUpperCase() + parts[parts.length - 2].slice(1);
+          }
+        }
+        
+        // Add to category
+        if (!categories[category]) {
+          categories[category] = [];
+        }
+        
+        categories[category].push(tab.id);
+      } catch (urlError) {
+        // Invalid URL, add to Other
+        if (!categories['Other']) {
+          categories['Other'] = [];
+        }
+        
+        categories['Other'].push(tab.id);
+      }
+    });
+    
+    // Ensure we have categories
+    if (Object.keys(categories).length === 0) {
+      categories['All Tabs'] = tabs.map(tab => tab.id);
+    }
+    
+    return categories;
+  } catch (error) {
+    console.error('Error generating simple categories:', error);
+    
+    // Return all tabs in one category
+    const tabIds = tabsText.split('\n\n')
+      .map(tabText => {
+        const idLine = tabText.split('\n').find(line => line.startsWith('ID:'));
+        return idLine ? idLine.substring(4).trim() : null;
+      })
+      .filter(Boolean);
+    
+    return { 'All Tabs': tabIds };
+  }
+}
+
+/**
+ * Get all available categories
+ * @returns {Promise<Array>} - Array of category names
+ */
+async function getAllCategories() {
+  try {
+    // This would typically be stored in a database
+    // For simplicity, we'll return some default categories
+    return [
+      'Work', 
+      'Research', 
+      'Shopping', 
+      'News', 
+      'Development', 
+      'Social Media', 
+      'Entertainment',
+      'Travel',
+      'Education',
+      'Finance'
+    ];
+  } catch (error) {
+    console.error('Error getting all categories:', error);
+    return [];
+  }
+}
+
+module.exports = {
+  categorizeTabs,
+  categorizeTabsWithDetails,
+  getAllCategories
+};

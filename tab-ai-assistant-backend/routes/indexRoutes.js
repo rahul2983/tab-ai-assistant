@@ -67,4 +67,35 @@ router.delete('/remove/:id', async (req, res, next) => {
     // Remove the tab from the index
     const result = await tabService.removeTab(id);
     
-    res.status(200).json(
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/categorize
+ * @description Categorize tabs into groups
+ * @access Public
+ */
+router.post('/categorize', async (req, res, next) => {
+  try {
+    const { tabIds } = req.body;
+    
+    if (!Array.isArray(tabIds) || tabIds.length === 0) {
+      return res.status(400).json({ error: 'Tab IDs array is required' });
+    }
+    
+    // Process and categorize tabs
+    const results = await categoryService.categorizeTabs(tabIds);
+    
+    res.status(200).json({
+      success: true,
+      categories: results
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
