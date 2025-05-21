@@ -62,6 +62,8 @@ data/local/
 # Ignore user data
 data/metadata.json
 data/vectors.json
+data/notes.json
+data/tab-history.json
 
 # But keep the directory structure
 !data/.gitkeep

@@ -4,9 +4,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const config = require('./config/config');
+
 const indexRoutes = require('./routes/indexRoutes');
 const searchRoutes = require('./routes/searchRoutes');
-const config = require('./config/config');
+const categoryRoutes = require('./routes/categoryRoutes');
+const notesRoutes = require('./routes/notesRoutes');
+const historyRoutes = require('./routes/historyRoutes');
+const priorityRoutes = require('./routes/priorityRoutes');
 
 // Initialize express app
 const app = express();
@@ -27,6 +32,10 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api', indexRoutes);
 app.use('/api', searchRoutes);
+app.use('/api', categoryRoutes);
+app.use('/api', notesRoutes);
+app.use('/api', historyRoutes);
+app.use('/api', priorityRoutes);
 
 // Root route
 app.get('/', (req, res) => {

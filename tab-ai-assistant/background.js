@@ -839,6 +839,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
     
     return true; // Keep channel open for async response
+  } else if (message.action === 'categorizeTabs') {
+    // Handle tab categorization request
+    console.log('Tab categorization request received:', message.tabIds.length, 'tabs');
+    
+    (async () => {
+      try {
+        // First try to send to backend
+        try {
+          const result = await sendToBackend('/categorize', { tabIds: message.tabIds });
+          console.log('Categorization result:', result);
+          
+          if (result.success && result.categories) {
+            sendResponse({
+              success: true,
+              categories: result.categories
+            });
+          } else {
+            throw new Error('Invalid response from backend');
+          }
+        } catch (backendError) {
+          console.error('Error with backend categorization:', backendError);
+          
+          // Fallback to local categorization
+          const categories = await localCategorizeTabs(message.tabIds);
+          sendResponse({
+            success: true,
+            categories: categories,
+            fromFallback: true
+          });
+        }
+      } catch (error) {
+        console.error('Error categorizing tabs:', error);
+        sendResponse({ 
+          success: false, 
+          error: error.message 
+        });
+      }
+    })();
+    
+    return true; // Keep channel open for async response
   }
   
   // Return false for unhandled messages
@@ -855,4 +895,95 @@ function generateSimpleId(url) {
     hash = hash & hash;
   }
   return Math.abs(hash).toString(16);
+}
+
+/**
+ * Categorize tabs locally without backend
+ * @param {Array} tabIds - Tab IDs to categorize
+ * @returns {Promise<Object>} - Categories with tab IDs
+ */
+async function localCategorizeTabs(tabIds) {
+  try {
+    // Get tab details from storage
+    const { indexedTabs = {} } = await chrome.storage.local.get('indexedTabs');
+    
+    // Create domain-based categories as fallback
+    const categories = {};
+    
+    for (const tabId of tabIds) {
+      const tab = indexedTabs[tabId];
+      if (!tab) continue;
+      
+      try {
+        // Extract domain from URL
+        const url = new URL(tab.url);
+        let domain = url.hostname;
+        
+        // Clean up domain
+        domain = domain.replace(/^www\./, '');
+        
+        // Handle common domains specially
+        if (domain.includes('github.com')) {
+          domain = 'GitHub';
+        } else if (domain.includes('google.com')) {
+          domain = 'Google';
+        } else if (domain.includes('youtube.com')) {
+          domain = 'YouTube';
+        } else if (domain.includes('twitter.com') || domain.includes('x.com')) {
+          domain = 'Twitter/X';
+        } else if (domain.includes('facebook.com')) {
+          domain = 'Facebook';
+        } else if (domain.includes('linkedin.com')) {
+          domain = 'LinkedIn';
+        } else if (domain.includes('amazon.com')) {
+          domain = 'Amazon';
+        } else if (domain.includes('reddit.com')) {
+          domain = 'Reddit';
+        } else {
+          // Use the TLD + SLD as the category
+          const parts = domain.split('.');
+          if (parts.length >= 2) {
+            domain = parts[parts.length - 2].charAt(0).toUpperCase() + parts[parts.length - 2].slice(1);
+          }
+        }
+        
+        // Add to appropriate category
+        if (!categories[domain]) {
+          categories[domain] = [];
+        }
+        categories[domain].push(tabId);
+      } catch (urlError) {
+        // Handle invalid URLs
+        if (!categories['Other']) {
+          categories['Other'] = [];
+        }
+        categories['Other'].push(tabId);
+      }
+    }
+    
+    // Consolidate small categories
+    const consolidated = {};
+    const minSize = 2; // Minimum number of tabs for a category
+    let other = [];
+    
+    // First pass: keep categories with enough tabs
+    for (const [category, catTabIds] of Object.entries(categories)) {
+      if (catTabIds.length >= minSize) {
+        consolidated[category] = catTabIds;
+      } else {
+        other = [...other, ...catTabIds];
+      }
+    }
+    
+    // Add "Other" category if needed
+    if (other.length > 0) {
+      consolidated['Other'] = other;
+    }
+    
+    return consolidated;
+  } catch (error) {
+    console.error('Error in local categorization:', error);
+    // Return a simple object with all tabs in one category
+    return { 'All Tabs': tabIds };
+  }
 }
