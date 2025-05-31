@@ -67,3 +67,5 @@ data/tab-history.json
 
 # But keep the directory structure
 !data/.gitkeep
+
+.DS_Store
